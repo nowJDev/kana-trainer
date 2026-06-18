@@ -12,14 +12,22 @@ def input_prompt(question: str) -> str:
     return f"{question}\n> "
 
 
-def should_clear_screen(*, is_interactive: bool, no_clear: bool) -> bool:
-    return is_interactive and not no_clear
+def supports_ansi_clear() -> bool:
+    return bool(os.environ.get("WT_SESSION") or os.environ.get("TERM") or os.environ.get("ANSICON"))
+
+
+def should_clear_screen(*, is_interactive: bool, no_clear: bool, supports_ansi: bool) -> bool:
+    return is_interactive and not no_clear and supports_ansi
 
 
 def clear_screen(stream: TextIO | None = None) -> None:
     output = stream or sys.stdout
     no_clear = os.environ.get("KANA_TRAINER_NO_CLEAR") == "1"
-    if should_clear_screen(is_interactive=output.isatty(), no_clear=no_clear):
+    if should_clear_screen(
+        is_interactive=output.isatty(),
+        no_clear=no_clear,
+        supports_ansi=supports_ansi_clear(),
+    ):
         output.write(CLEAR_SCREEN)
         output.flush()
 

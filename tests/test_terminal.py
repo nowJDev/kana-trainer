@@ -9,9 +9,10 @@ class TerminalRenderingTests(unittest.TestCase):
         self.assertEqual(input_prompt("し 의 읽는 법은?"), "し 의 읽는 법은?\n> ")
 
     def test_clear_screen_is_only_used_for_interactive_output(self):
-        self.assertTrue(should_clear_screen(is_interactive=True, no_clear=False))
-        self.assertFalse(should_clear_screen(is_interactive=False, no_clear=False))
-        self.assertFalse(should_clear_screen(is_interactive=True, no_clear=True))
+        self.assertTrue(should_clear_screen(is_interactive=True, no_clear=False, supports_ansi=True))
+        self.assertFalse(should_clear_screen(is_interactive=False, no_clear=False, supports_ansi=True))
+        self.assertFalse(should_clear_screen(is_interactive=True, no_clear=True, supports_ansi=True))
+        self.assertFalse(should_clear_screen(is_interactive=True, no_clear=False, supports_ansi=False))
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ if not defined KANA_TRAINER_DIRECT (
         powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0test-kana-terminal-profile.ps1" > nul 2> nul
         if not errorlevel 1 (
             if "%~1"=="" (
-                "%WT_EXE%" -w new -p "Kana Trainer"
+                start "" "%WT_EXE%" -w new -p "Kana Trainer"
                 if not errorlevel 1 exit /b
             )
         )
