@@ -10,19 +10,10 @@ if /I "%~1"=="--direct" (
 )
 
 if not defined KANA_TRAINER_DIRECT (
-    set "WT_EXE="
-    if exist "%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe" set "WT_EXE=%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe"
-    if not defined WT_EXE (
-        where wt.exe > nul 2> nul
-        if %errorlevel%==0 set "WT_EXE=wt.exe"
-    )
-    if defined WT_EXE (
-        powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0test-kana-terminal-profile.ps1" > nul 2> nul
+    if "%~1"=="" (
+        powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0open-kana-terminal.ps1" > nul 2> nul
         if not errorlevel 1 (
-            if "%~1"=="" (
-                start "" "%WT_EXE%" -w new -p "Kana Trainer"
-                if not errorlevel 1 exit /b
-            )
+            exit /b
         )
     )
 )
