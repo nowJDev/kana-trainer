@@ -1,19 +1,27 @@
 # Kana Trainer
 
-일본어 직접 입력 없이 히라가나와 가타카나를 연습하는 CLI 학습 앱입니다.
+일본어 직접 입력 없이 히라가나와 가타카나를 연습하는 학습 앱입니다.
 
-현재 버전: `0.1.0`.
+현재 버전: `0.2.0`.
 
 ## 실행
 
-```powershell
-python -m kana_trainer
-```
-
-Windows에서는 같은 폴더의 배치 파일로 바로 실행할 수 있습니다.
+Windows에서는 같은 폴더의 배치 파일로 터미널풍 GUI를 바로 실행할 수 있습니다.
 
 ```powershell
 .\run-kana-trainer.bat
+```
+
+명령어로 직접 GUI를 실행하려면 다음처럼 실행합니다.
+
+```powershell
+python -m kana_trainer --gui
+```
+
+기존 CLI 화면으로 실행하려면 다음처럼 실행합니다.
+
+```powershell
+python -m kana_trainer
 ```
 
 입력 없는 데모는 다음처럼 볼 수 있습니다.
@@ -34,9 +42,9 @@ python -m kana_trainer --demo
 
 오답 기록은 기본적으로 사용자 홈의 `.kana-trainer/wrong-answers.json`에 저장됩니다. 다른 위치를 쓰려면 `KANA_TRAINER_WRONG_PATH` 환경변수를 설정하면 됩니다.
 
-대화형 메뉴에서는 터미널 글자 크기 변경 시 입력 줄과 기존 출력이 겹치는 현상을 줄이기 위해 화면을 자동으로 정리합니다. 이 동작을 끄려면 `KANA_TRAINER_NO_CLEAR=1`을 설정하면 됩니다.
+GUI에서는 `A-`, `A+`, `Ctrl+마우스 휠`로 글자 크기를 조절할 수 있습니다. 설정은 사용자 홈의 `.kana-trainer/settings.json`에 저장됩니다.
 
-폰트 크기는 사용하는 터미널 프로그램의 설정에서 조정하세요. 프로젝트 자체는 별도 터미널 프로필을 만들지 않습니다.
+CLI 대화형 메뉴에서는 터미널 글자 크기 변경 시 입력 줄과 기존 출력이 겹치는 현상을 줄이기 위해 화면을 자동으로 정리합니다. 이 동작을 끄려면 `KANA_TRAINER_NO_CLEAR=1`을 설정하면 됩니다.
 
 ## 라이선스
 
@@ -57,6 +65,13 @@ python -m kana_trainer --demo
 - 학습 기록과 정답률 요약.
 
 ## 버전 이력
+
+### 0.2.0
+
+- 터미널풍 GUI 실행 모드를 추가했습니다.
+- GUI 안에서 글자 크기를 조절하고 저장할 수 있게 했습니다.
+- Windows 배치 파일이 GUI를 기본으로 실행하도록 변경했습니다.
+- 기존 CLI 실행 방식은 `python -m kana_trainer`로 유지했습니다.
 
 ### 0.1.0
 

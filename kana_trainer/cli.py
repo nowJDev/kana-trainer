@@ -274,7 +274,13 @@ def run_menu() -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="히라가나와 가타카나를 연습하는 CLI 학습 앱.")
     parser.add_argument("--demo", action="store_true", help="입력 없이 데모 출력을 보여준다.")
+    parser.add_argument("--gui", action="store_true", help="터미널풍 GUI 앱으로 실행한다.")
     args = parser.parse_args(argv)
+
+    if args.gui:
+        from .gui import run_gui
+
+        return run_gui()
 
     if args.demo:
         configure_stdio()

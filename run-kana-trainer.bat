@@ -1,9 +1,15 @@
-@rem 가나 학습 CLI를 Windows에서 바로 실행한다.
+@rem 가나 학습 GUI를 Windows에서 바로 실행한다.
 @echo off
 chcp.com 65001 >nul
 cd /d "%~dp0"
 
-python -m kana_trainer %*
+where pythonw.exe >nul 2>nul
+if %errorlevel%==0 (
+    start "" pythonw.exe -m kana_trainer --gui %*
+    exit /b
+)
+
+python -m kana_trainer --gui %*
 
 if errorlevel 1 (
     echo.
