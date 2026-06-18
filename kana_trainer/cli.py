@@ -23,6 +23,7 @@ from .quiz import (
     is_correct_romaji,
     random_prompt,
 )
+from .terminal import clear_screen, input_prompt, pause_if_interactive
 
 DEFAULT_QUESTION_COUNT = 10
 
@@ -42,7 +43,7 @@ def default_store_path() -> Path:
 
 
 def ask_question(symbol: str, romaji: str, store: WrongAnswerStore) -> bool:
-    answer = input(f"{symbol} 의 읽는 법은? > ")
+    answer = input(input_prompt(f"{symbol} 의 읽는 법은?"))
     if is_correct_romaji(answer, romaji):
         print("정답.")
         return True
@@ -194,6 +195,7 @@ def print_original_markdown() -> None:
 
 def run_reference_menu() -> None:
     while True:
+        clear_screen()
         print("\n참고 자료")
         print("1. 히라가나 헷갈리는 쌍/예문")
         print("2. 가타카나 헷갈리는 쌍/예문")
@@ -204,12 +206,16 @@ def run_reference_menu() -> None:
 
         if choice == "1":
             print_reference_for_script("hiragana")
+            pause_if_interactive()
         elif choice == "2":
             print_reference_for_script("katakana")
+            pause_if_interactive()
         elif choice == "3":
             print_particle_reference()
+            pause_if_interactive()
         elif choice == "4":
             print_original_markdown()
+            pause_if_interactive()
         elif choice == "0":
             return
         else:
@@ -218,7 +224,8 @@ def run_reference_menu() -> None:
 
 def run_demo() -> None:
     print("かな Trainer 데모")
-    print("문제: し 의 읽는 법은? > shi")
+    print("문제: し 의 읽는 법은?")
+    print("> shi")
     print("정답.")
     print("문제: ka 에 해당하는 문자는?")
     choices = build_multiple_choice("ka", get_kana("hiragana"), rng_seed=7)
@@ -231,6 +238,7 @@ def run_menu() -> None:
     store = WrongAnswerStore(default_store_path())
 
     while True:
+        clear_screen()
         print("\nかな Trainer")
         print("1. 히라가나 보고 로마자 입력")
         print("2. 가타카나 보고 로마자 입력")

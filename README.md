@@ -34,6 +34,8 @@ python -m kana_trainer --demo
 
 오답 기록은 기본적으로 사용자 홈의 `.kana-trainer/wrong-answers.json`에 저장됩니다. 다른 위치를 쓰려면 `KANA_TRAINER_WRONG_PATH` 환경변수를 설정하면 됩니다.
 
+대화형 메뉴에서는 터미널 글자 크기 변경 시 입력 줄과 기존 출력이 겹치는 현상을 줄이기 위해 화면을 자동으로 정리합니다. 이 동작을 끄려면 `KANA_TRAINER_NO_CLEAR=1`을 설정하면 됩니다.
+
 ## 라이선스
 
 이 프로젝트는 MIT License로 배포됩니다. 자세한 내용은 [LICENSE](LICENSE)를 확인하세요.
