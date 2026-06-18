@@ -23,6 +23,7 @@ powershell -ExecutionPolicy Bypass -File .\install-kana-terminal-profile.ps1
 ```
 
 설치 후 `run-kana-trainer.bat`를 실행하면 `Kana Trainer` 전용 Windows Terminal 프로필로 열립니다. 기본 폰트 크기는 18입니다.
+이미 프로필을 설치한 뒤 실행 문제가 생겼다면 같은 명령을 다시 실행해 프로필 설정을 갱신하세요.
 
 입력 없는 데모는 다음처럼 볼 수 있습니다.
 

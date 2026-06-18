@@ -25,7 +25,7 @@ if (-not $settings.profiles.list) {
     $settings.profiles | Add-Member -MemberType NoteProperty -Name list -Value @()
 }
 
-$commandLine = "$env:SystemRoot\System32\cmd.exe /k `"$projectRoot\run-kana-trainer.bat`" --direct"
+$commandLine = "$env:SystemRoot\System32\cmd.exe /k call `"$projectRoot\run-kana-trainer.bat`" --direct"
 $startingDirectory = $projectRoot
 $profile = [pscustomobject]@{
     guid = $profileGuid

@@ -18,8 +18,11 @@ if not defined KANA_TRAINER_DIRECT (
             if %errorlevel%==0 set "WT_EXE=wt.exe"
         )
         if defined WT_EXE (
-            "%WT_EXE%" -p "Kana Trainer" -d "%~dp0" cmd.exe /k ""%~f0" --direct %*"
-            if %errorlevel%==0 exit /b
+            powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0test-kana-terminal-profile.ps1" > nul 2> nul
+            if not errorlevel 1 (
+                "%WT_EXE%" -p "Kana Trainer" -d "%~dp0" "%ComSpec%" /k call "%~f0" --direct %*
+                if not errorlevel 1 exit /b
+            )
         )
     )
 )
