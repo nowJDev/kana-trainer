@@ -34,6 +34,10 @@ python -m kana_trainer --demo
 
 오답 기록은 기본적으로 사용자 홈의 `.kana-trainer/wrong-answers.json`에 저장됩니다. 다른 위치를 쓰려면 `KANA_TRAINER_WRONG_PATH` 환경변수를 설정하면 됩니다.
 
+## 라이선스
+
+이 프로젝트는 MIT License로 배포됩니다. 자세한 내용은 [LICENSE](LICENSE)를 확인하세요.
+
 ## 현재 상태
 
 지금 버전은 문자 암기용 퀴즈 앱에 가깝습니다. 히라가나와 가타카나 문자, 탁음, 반탁음, 작은 글자 결합을 보고 로마자로 답하거나 4지선다로 고르는 흐름을 중심으로 합니다.
