@@ -1,0 +1,18 @@
+# 파이썬 실행 캐시와 로컬 개발 산출물을 제외한다.
+__pycache__/
+*.py[cod]
+*$py.class
+
+.venv/
+venv/
+env/
+
+.env
+.env.*
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.kana-trainer/
+wrong-answers.json
