@@ -34,7 +34,7 @@ $profile = [pscustomobject]@{
     startingDirectory = $startingDirectory
     font = [pscustomobject]@{
         face = "Cascadia Mono"
-        size = 18
+        size = 50
     }
 }
 
