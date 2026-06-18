@@ -28,6 +28,15 @@ from .quiz import (
 from .settings import AppSettings, SettingsStore, clamp_font_size
 
 InputHandler = Callable[[str], None]
+DISPLAY_FONT_CANDIDATES = ("Yu Gothic UI", "Meiryo", "Yu Gothic", "MS Gothic")
+
+
+def choose_display_font(available_fonts: tuple[str, ...]) -> str:
+    available = set(available_fonts)
+    for family in DISPLAY_FONT_CANDIDATES:
+        if family in available:
+            return family
+    return DISPLAY_FONT_CANDIDATES[-1]
 
 
 @dataclass
@@ -59,7 +68,8 @@ class KanaTrainerApp:
         self.root.minsize(680, 460)
         self.root.configure(bg="#111111")
 
-        self.text_font = font.Font(family="MS Gothic", size=self.settings.font_size)
+        display_font = choose_display_font(font.families(root))
+        self.text_font = font.Font(family=display_font, size=self.settings.font_size)
         self.ui_font = font.Font(family="Segoe UI", size=10)
         self._build_layout()
         self._bind_events()
