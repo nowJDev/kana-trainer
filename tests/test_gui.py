@@ -7,6 +7,12 @@ from kana_trainer.gui import KanaTrainerApp, choose_display_font
 
 
 class GuiFontTests(unittest.TestCase):
+    def make_root(self):
+        try:
+            return tk.Tk()
+        except tk.TclError as error:
+            self.skipTest(f"Tk 초기화 불가: {error}")
+
     def test_choose_display_font_prefers_nanum_gothic(self):
         available = ("MS Gothic", "Meiryo", "Yu Gothic UI", "나눔고딕")
 
@@ -18,7 +24,7 @@ class GuiFontTests(unittest.TestCase):
         self.assertEqual(choose_display_font(("Arial", "MS Gothic")), "MS Gothic")
 
     def test_entry_stays_visible_with_large_font_size(self):
-        root = tk.Tk()
+        root = self.make_root()
         try:
             app = KanaTrainerApp(root)
             root.update()
@@ -32,7 +38,7 @@ class GuiFontTests(unittest.TestCase):
             root.destroy()
 
     def test_submit_returns_focus_to_entry(self):
-        root = tk.Tk()
+        root = self.make_root()
         try:
             app = KanaTrainerApp(root)
             calls = []
@@ -47,7 +53,7 @@ class GuiFontTests(unittest.TestCase):
             root.destroy()
 
     def test_semantic_color_tags_are_configured(self):
-        root = tk.Tk()
+        root = self.make_root()
         try:
             app = KanaTrainerApp(root)
 
@@ -58,12 +64,48 @@ class GuiFontTests(unittest.TestCase):
             root.destroy()
 
     def test_menu_numbers_use_menu_color_tag(self):
-        root = tk.Tk()
+        root = self.make_root()
         try:
             app = KanaTrainerApp(root)
             root.update()
 
             self.assertIn("menu", app.output.tag_names("3.0"))
+        finally:
+            root.destroy()
+
+    def test_main_menu_buttons_are_shown(self):
+        root = self.make_root()
+        try:
+            app = KanaTrainerApp(root)
+
+            labels = [child.cget("text") for child in app.option_frame.winfo_children()]
+
+            self.assertIn("1. 히라가나 보고 로마자 입력", labels)
+            self.assertIn("0. 종료", labels)
+        finally:
+            root.destroy()
+
+    def test_menu_button_uses_existing_input_handler(self):
+        root = self.make_root()
+        try:
+            app = KanaTrainerApp(root)
+            calls = []
+            app.handler = lambda value: calls.append(value)
+
+            app.option_frame.winfo_children()[0].invoke()
+
+            self.assertEqual(calls, ["1"])
+        finally:
+            root.destroy()
+
+    def test_free_input_quiz_clears_option_buttons(self):
+        root = self.make_root()
+        try:
+            app = KanaTrainerApp(root)
+
+            app.start_romaji_quiz("히라가나 연습", (("あ", "a"),))
+
+            self.assertEqual(app.option_frame.winfo_children(), ())
         finally:
             root.destroy()
 

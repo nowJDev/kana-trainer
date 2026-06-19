@@ -28,7 +28,25 @@ from .quiz import (
 from .settings import AppSettings, SettingsStore, clamp_font_size
 
 InputHandler = Callable[[str], None]
+MenuOption = tuple[str, str]
 DISPLAY_FONT_CANDIDATES = ("나눔고딕", "NanumGothic", "Nanum Gothic", "Yu Gothic UI", "Meiryo", "Yu Gothic", "MS Gothic")
+MAIN_MENU_OPTIONS: tuple[MenuOption, ...] = (
+    ("1", "히라가나 보고 로마자 입력"),
+    ("2", "가타카나 보고 로마자 입력"),
+    ("3", "로마자 보고 히라가나 선택"),
+    ("4", "히라가나-가타카나 매칭"),
+    ("5", "오답 복습"),
+    ("6", "오답 기록 보기"),
+    ("7", "일본어.md 참고 자료 보기"),
+    ("0", "종료"),
+)
+REFERENCE_MENU_OPTIONS: tuple[MenuOption, ...] = (
+    ("1", "히라가나 헷갈리는 쌍/예문"),
+    ("2", "가타카나 헷갈리는 쌍/예문"),
+    ("3", "조사와 바로 쓰는 문장"),
+    ("4", "일본어.md 원문 전체 보기"),
+    ("0", "돌아가기"),
+)
 COLOR_TAGS = {
     "muted": "#8A8F98",
     "good": "#7ED957",
@@ -135,8 +153,13 @@ class KanaTrainerApp:
         self.output.grid(row=1, column=0, sticky="nsew")
         self.configure_output_tags()
 
+        self.option_frame = tk.Frame(self.root, bg="#161616", padx=10, pady=8)
+        self.option_frame.grid(row=2, column=0, sticky="ew")
+        for column in range(2):
+            self.option_frame.columnconfigure(column, weight=1)
+
         input_row = tk.Frame(self.root, bg="#1b1b1b")
-        input_row.grid(row=2, column=0, sticky="ew")
+        input_row.grid(row=3, column=0, sticky="ew")
         input_row.columnconfigure(1, weight=1)
 
         prompt = tk.Label(input_row, text=">", bg="#1b1b1b", fg="#f7d774", font=self.text_font, padx=12)
@@ -168,7 +191,7 @@ class KanaTrainerApp:
             padx=12,
             pady=6,
         )
-        status.grid(row=3, column=0, sticky="ew")
+        status.grid(row=4, column=0, sticky="ew")
 
     def _bind_events(self) -> None:
         self.root.bind("<Return>", lambda _event: self.submit_input())
@@ -231,6 +254,9 @@ class KanaTrainerApp:
     def submit_input(self) -> None:
         value = self.entry_var.get().strip()
         self.entry_var.set("")
+        self.submit_value(value)
+
+    def submit_value(self, value: str) -> None:
         if value:
             self.write(f"> {value}", "input")
         self.handler(value)
@@ -241,23 +267,35 @@ class KanaTrainerApp:
         if should_focus:
             self.focus_entry()
 
+    def set_option_buttons(self, options: tuple[MenuOption, ...]) -> None:
+        for child in self.option_frame.winfo_children():
+            child.destroy()
+        if not options:
+            self.option_frame.grid_remove()
+            return
+
+        self.option_frame.grid()
+        for index, (value, label) in enumerate(options):
+            button = ttk.Button(
+                self.option_frame,
+                text=f"{value}. {label}" if value else label,
+                style="Kana.TButton",
+                command=lambda selected=value: self.submit_value(selected),
+            )
+            button.grid(row=index // 2, column=index % 2, sticky="ew", padx=4, pady=4)
+
     def show_main_menu(self) -> None:
         self.session = None
         self.handler = self.handle_menu_input
         self.clear_output()
         self.write("かな Trainer", "title")
         self.write("")
-        self.write_menu_item("1", "히라가나 보고 로마자 입력")
-        self.write_menu_item("2", "가타카나 보고 로마자 입력")
-        self.write_menu_item("3", "로마자 보고 히라가나 선택")
-        self.write_menu_item("4", "히라가나-가타카나 매칭")
-        self.write_menu_item("5", "오답 복습")
-        self.write_menu_item("6", "오답 기록 보기")
-        self.write_menu_item("7", "일본어.md 참고 자료 보기")
-        self.write_menu_item("0", "종료")
+        for number, label in MAIN_MENU_OPTIONS:
+            self.write_menu_item(number, label)
         self.write("")
-        self.write("메뉴 번호를 입력하세요.", "muted")
-        self.status_var.set("메뉴 | Enter 제출 | Esc 메뉴 | Ctrl+휠 글자 크기")
+        self.write("메뉴 번호를 입력하거나 버튼을 누르세요.", "muted")
+        self.set_option_buttons(MAIN_MENU_OPTIONS)
+        self.status_var.set("메뉴 | 버튼 선택 | Enter 제출 | Esc 메뉴 | Ctrl+휠 글자 크기")
 
     def write_menu_item(self, number: str, label: str) -> None:
         self.write_segments(((f"{number}. ", "menu"), (label, None)))
@@ -286,6 +324,7 @@ class KanaTrainerApp:
         self.session = QuizSession(title=title, mode="romaji", entries=entries)
         self.handler = self.handle_romaji_answer
         self.clear_output()
+        self.set_option_buttons(())
         self.write(title)
         self.next_romaji_question()
 
@@ -334,6 +373,7 @@ class KanaTrainerApp:
         session.expected_symbol = expected_symbol
         session.expected_romaji = romaji
         session.choices = build_multiple_choice(romaji, session.entries)
+        self.set_option_buttons(tuple((str(index), symbol) for index, (symbol, _romaji) in enumerate(session.choices, start=1)))
         self.write("")
         self.write_segments(((f"문제 {session.index}/{session.count}: ", "question"), (romaji, "answer"), (" 에 해당하는 문자는?", "question")))
         for index, (symbol, _choice_romaji) in enumerate(session.choices, start=1):
@@ -371,6 +411,7 @@ class KanaTrainerApp:
         session.expected_symbol = katakana
         session.expected_romaji = romaji
         session.choices = build_multiple_choice(romaji, katakana_entries)
+        self.set_option_buttons(tuple((str(index), symbol) for index, (symbol, _romaji) in enumerate(session.choices, start=1)))
         self.write("")
         self.write_segments(((f"문제 {session.index}/{session.count}: ", "question"), (hiragana, "kana"), (" 와 같은 소리의 가타카나는?", "question")))
         for index, (symbol, _choice_romaji) in enumerate(session.choices, start=1):
@@ -407,12 +448,14 @@ class KanaTrainerApp:
             self.write(f"결과: {session.correct}/{session.count} 정답.", "result")
         self.write("")
         self.write("메뉴로 돌아가려면 Enter 또는 Esc를 누르세요.", "muted")
+        self.set_option_buttons((("", "메뉴로 돌아가기"),))
         self.handler = lambda _value: self.show_main_menu()
 
     def start_wrong_answer_review(self) -> None:
         entries = self.store.as_entries()
         if not entries:
             self.clear_output()
+            self.set_option_buttons((("", "메뉴로 돌아가기"),))
             self.write("아직 오답 기록이 없습니다.")
             self.write("")
             self.write("메뉴로 돌아가려면 Enter 또는 Esc를 누르세요.", "muted")
@@ -426,11 +469,13 @@ class KanaTrainerApp:
         )
         self.handler = self.handle_romaji_answer
         self.clear_output()
+        self.set_option_buttons(())
         self.write("오답 복습")
         self.next_romaji_question()
 
     def show_wrong_answer_summary(self) -> None:
         self.clear_output()
+        self.set_option_buttons((("", "메뉴로 돌아가기"),))
         data = self.store.load()
         if not data:
             self.write("오늘 복습할 오답이 없습니다.")
@@ -447,11 +492,9 @@ class KanaTrainerApp:
         self.clear_output()
         self.write("참고 자료")
         self.write("")
-        self.write("1. 히라가나 헷갈리는 쌍/예문")
-        self.write("2. 가타카나 헷갈리는 쌍/예문")
-        self.write("3. 조사와 바로 쓰는 문장")
-        self.write("4. 일본어.md 원문 전체 보기")
-        self.write("0. 돌아가기")
+        for number, label in REFERENCE_MENU_OPTIONS:
+            self.write_menu_item(number, label)
+        self.set_option_buttons(REFERENCE_MENU_OPTIONS)
 
     def handle_reference_input(self, value: str) -> None:
         if value == "1":
@@ -515,6 +558,7 @@ class KanaTrainerApp:
     def write_return_hint(self) -> None:
         self.write("")
         self.write("참고 자료 메뉴로 돌아가려면 Enter 또는 Esc를 누르세요.", "muted")
+        self.set_option_buttons((("", "참고 자료 메뉴로 돌아가기"),))
         self.handler = lambda _value: self.show_reference_menu()
 
     def require_session(self) -> QuizSession:
