@@ -30,6 +30,22 @@ from .settings import AppSettings, SettingsStore, clamp_font_size
 InputHandler = Callable[[str], None]
 MenuOption = tuple[str, str]
 DISPLAY_FONT_CANDIDATES = ("나눔고딕", "NanumGothic", "Nanum Gothic", "Yu Gothic UI", "Meiryo", "Yu Gothic", "MS Gothic")
+GLASS_THEME = {
+    "background": "#070A0F",
+    "surface": "#111824",
+    "surface_soft": "#0B111A",
+    "surface_lifted": "#162131",
+    "border": "#203246",
+    "border_glow": "#65D9FF",
+    "glow_cool": "#9FE7FF",
+    "glow_warm": "#FFE6A3",
+    "glow_good": "#B5FFCA",
+    "glow_bad": "#FF8FA3",
+    "glow_input": "#B1FFF2",
+    "text": "#EAF6FF",
+    "muted": "#8FA3B7",
+    "selection": "#1E4056",
+}
 MAIN_MENU_OPTIONS: tuple[MenuOption, ...] = (
     ("1", "히라가나 보고 로마자 입력"),
     ("2", "가타카나 보고 로마자 입력"),
@@ -48,16 +64,16 @@ REFERENCE_MENU_OPTIONS: tuple[MenuOption, ...] = (
     ("0", "돌아가기"),
 )
 COLOR_TAGS = {
-    "muted": "#8A8F98",
-    "good": "#7ED957",
-    "bad": "#FF6B6B",
-    "input": "#7DD3C7",
-    "menu": "#8CC7FF",
-    "question": "#F2D06B",
-    "kana": "#8CC7FF",
-    "answer": "#F2A65A",
-    "result": "#C7A9FF",
-    "title": "#F2F2F2",
+    "muted": GLASS_THEME["muted"],
+    "good": GLASS_THEME["glow_good"],
+    "bad": GLASS_THEME["glow_bad"],
+    "input": GLASS_THEME["glow_input"],
+    "menu": GLASS_THEME["glow_cool"],
+    "question": GLASS_THEME["glow_warm"],
+    "kana": GLASS_THEME["glow_cool"],
+    "answer": GLASS_THEME["glow_warm"],
+    "result": "#D9C2FF",
+    "title": GLASS_THEME["text"],
 }
 
 
@@ -67,6 +83,10 @@ def choose_display_font(available_fonts: tuple[str, ...]) -> str:
         if family in available:
             return family
     return DISPLAY_FONT_CANDIDATES[-1]
+
+
+def choose_ui_font_family(display_font: str) -> str:
+    return display_font
 
 
 @dataclass
@@ -97,31 +117,71 @@ class KanaTrainerApp:
         self.root.title("Kana Trainer")
         self.root.geometry("920x680")
         self.root.minsize(680, 460)
-        self.root.configure(bg="#111111")
+        self.root.configure(bg=GLASS_THEME["background"])
 
         display_font = choose_display_font(font.families(root))
+        ui_font_family = choose_ui_font_family(display_font)
         self.text_font = font.Font(family=display_font, size=self.settings.font_size)
-        self.ui_font = font.Font(family="Segoe UI", size=10)
+        self.emphasis_font = font.Font(family=display_font, size=self.settings.font_size, weight="bold")
+        self.ui_font = font.Font(family=ui_font_family, size=11, weight="normal")
+        self.title_font = font.Font(family=ui_font_family, size=16, weight="bold")
         self._build_layout()
         self._bind_events()
         self.show_main_menu()
 
     def _build_layout(self) -> None:
         style = ttk.Style()
-        style.configure("Kana.TButton", font=self.ui_font, padding=(10, 5))
+        try:
+            style.theme_use("clam")
+        except tk.TclError:
+            pass
+        style.configure(
+            "Kana.TButton",
+            background=GLASS_THEME["surface_lifted"],
+            bordercolor=GLASS_THEME["border"],
+            darkcolor=GLASS_THEME["surface"],
+            focuscolor=GLASS_THEME["border_glow"],
+            font=self.ui_font,
+            foreground=GLASS_THEME["text"],
+            lightcolor=GLASS_THEME["border_glow"],
+            padding=(14, 8),
+            relief=tk.FLAT,
+        )
+        style.map(
+            "Kana.TButton",
+            background=[
+                ("pressed", GLASS_THEME["surface_soft"]),
+                ("active", GLASS_THEME["surface_lifted"]),
+            ],
+            bordercolor=[
+                ("focus", GLASS_THEME["border_glow"]),
+                ("active", GLASS_THEME["border_glow"]),
+            ],
+            foreground=[
+                ("pressed", GLASS_THEME["glow_warm"]),
+                ("active", GLASS_THEME["glow_cool"]),
+            ],
+            lightcolor=[("active", GLASS_THEME["border_glow"])],
+        )
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(1, weight=1)
 
-        header = tk.Frame(self.root, bg="#1b1b1b")
-        header.grid(row=0, column=0, sticky="ew")
+        header = tk.Frame(
+            self.root,
+            bg=GLASS_THEME["surface"],
+            highlightbackground=GLASS_THEME["border"],
+            highlightcolor=GLASS_THEME["border_glow"],
+            highlightthickness=1,
+        )
+        header.grid(row=0, column=0, sticky="ew", padx=12, pady=(12, 8))
 
         title = tk.Label(
             header,
             text="かな Trainer",
-            bg="#1b1b1b",
-            fg="#f2f2f2",
-            font=("Segoe UI", 15, "bold"),
-            padx=14,
+            bg=GLASS_THEME["surface"],
+            fg=GLASS_THEME["glow_cool"],
+            font=self.title_font,
+            padx=16,
             pady=10,
         )
         title.pack(side=tk.LEFT)
@@ -138,10 +198,13 @@ class KanaTrainerApp:
         self.output = scrolledtext.ScrolledText(
             self.root,
             wrap=tk.WORD,
-            bg="#0c0c0c",
-            fg="#e8e8e8",
-            insertbackground="#e8e8e8",
-            selectbackground="#345d7e",
+            bg=GLASS_THEME["surface_soft"],
+            fg=GLASS_THEME["text"],
+            highlightbackground=GLASS_THEME["border"],
+            highlightcolor=GLASS_THEME["border_glow"],
+            highlightthickness=1,
+            insertbackground=GLASS_THEME["glow_input"],
+            selectbackground=GLASS_THEME["selection"],
             relief=tk.FLAT,
             borderwidth=0,
             padx=18,
@@ -150,28 +213,52 @@ class KanaTrainerApp:
             state=tk.DISABLED,
             height=1,
         )
-        self.output.grid(row=1, column=0, sticky="nsew")
+        self.output.grid(row=1, column=0, sticky="nsew", padx=12, pady=(0, 8))
         self.configure_output_tags()
 
-        self.option_frame = tk.Frame(self.root, bg="#161616", padx=10, pady=8)
-        self.option_frame.grid(row=2, column=0, sticky="ew")
+        self.option_frame = tk.Frame(
+            self.root,
+            bg=GLASS_THEME["surface"],
+            highlightbackground=GLASS_THEME["border"],
+            highlightcolor=GLASS_THEME["border_glow"],
+            highlightthickness=1,
+            padx=10,
+            pady=8,
+        )
+        self.option_frame.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 8))
         for column in range(2):
             self.option_frame.columnconfigure(column, weight=1)
 
-        input_row = tk.Frame(self.root, bg="#1b1b1b")
-        input_row.grid(row=3, column=0, sticky="ew")
+        input_row = tk.Frame(
+            self.root,
+            bg=GLASS_THEME["surface"],
+            highlightbackground=GLASS_THEME["border"],
+            highlightcolor=GLASS_THEME["border_glow"],
+            highlightthickness=1,
+        )
+        input_row.grid(row=3, column=0, sticky="ew", padx=12, pady=(0, 8))
         input_row.columnconfigure(1, weight=1)
 
-        prompt = tk.Label(input_row, text=">", bg="#1b1b1b", fg="#f7d774", font=self.text_font, padx=12)
+        prompt = tk.Label(
+            input_row,
+            text=">",
+            bg=GLASS_THEME["surface"],
+            fg=GLASS_THEME["glow_warm"],
+            font=self.text_font,
+            padx=12,
+        )
         prompt.grid(row=0, column=0, sticky="w")
 
         self.entry_var = tk.StringVar()
         self.entry = tk.Entry(
             input_row,
             textvariable=self.entry_var,
-            bg="#101010",
-            fg="#f2f2f2",
-            insertbackground="#f2f2f2",
+            bg=GLASS_THEME["surface_soft"],
+            fg=GLASS_THEME["text"],
+            highlightbackground=GLASS_THEME["border"],
+            highlightcolor=GLASS_THEME["border_glow"],
+            highlightthickness=1,
+            insertbackground=GLASS_THEME["glow_input"],
             relief=tk.FLAT,
             font=self.text_font,
         )
@@ -185,8 +272,8 @@ class KanaTrainerApp:
             self.root,
             textvariable=self.status_var,
             anchor="w",
-            bg="#111111",
-            fg="#9ca3af",
+            bg=GLASS_THEME["background"],
+            fg=GLASS_THEME["muted"],
             font=self.ui_font,
             padx=12,
             pady=6,
@@ -225,6 +312,7 @@ class KanaTrainerApp:
         self.settings = AppSettings(font_size=next_size)
         self.settings_store.save(self.settings)
         self.text_font.configure(size=next_size)
+        self.emphasis_font.configure(size=next_size)
         self.status_var.set(f"폰트 크기 {next_size} | Enter 제출 | Esc 메뉴 | Ctrl+휠 글자 크기")
 
     def clear_output(self) -> None:
@@ -249,6 +337,8 @@ class KanaTrainerApp:
     def configure_output_tags(self) -> None:
         for tag, color in COLOR_TAGS.items():
             self.output.tag_configure(tag, foreground=color)
+        for tag in ("answer", "kana", "menu", "question", "result", "title"):
+            self.output.tag_configure(tag, font=self.emphasis_font)
         self.output.tag_configure("prompt", foreground=COLOR_TAGS["input"])
 
     def submit_input(self) -> None:

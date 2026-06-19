@@ -3,7 +3,7 @@ import unittest
 
 import tkinter as tk
 
-from kana_trainer.gui import KanaTrainerApp, choose_display_font
+from kana_trainer.gui import COLOR_TAGS, GLASS_THEME, KanaTrainerApp, choose_display_font, choose_ui_font_family
 
 
 class GuiFontTests(unittest.TestCase):
@@ -22,6 +22,16 @@ class GuiFontTests(unittest.TestCase):
         self.assertEqual(choose_display_font(("MS Gothic", "Meiryo", "Yu Gothic UI")), "Yu Gothic UI")
         self.assertEqual(choose_display_font(("MS Gothic", "Meiryo")), "Meiryo")
         self.assertEqual(choose_display_font(("Arial", "MS Gothic")), "MS Gothic")
+
+    def test_ui_font_uses_display_font_family(self):
+        self.assertEqual(choose_ui_font_family("나눔고딕"), "나눔고딕")
+
+    def test_glass_theme_uses_dark_surfaces_and_glow_accents(self):
+        self.assertEqual(GLASS_THEME["background"], "#070A0F")
+        self.assertEqual(GLASS_THEME["surface"], "#111824")
+        self.assertEqual(COLOR_TAGS["question"], GLASS_THEME["glow_warm"])
+        self.assertEqual(COLOR_TAGS["menu"], GLASS_THEME["glow_cool"])
+        self.assertEqual(COLOR_TAGS["kana"], GLASS_THEME["glow_cool"])
 
     def test_entry_stays_visible_with_large_font_size(self):
         root = self.make_root()
@@ -57,9 +67,9 @@ class GuiFontTests(unittest.TestCase):
         try:
             app = KanaTrainerApp(root)
 
-            self.assertEqual(app.output.tag_cget("question", "foreground"), "#F2D06B")
-            self.assertEqual(app.output.tag_cget("input", "foreground"), "#7DD3C7")
-            self.assertEqual(app.output.tag_cget("result", "foreground"), "#C7A9FF")
+            self.assertEqual(app.output.tag_cget("question", "foreground"), GLASS_THEME["glow_warm"])
+            self.assertEqual(app.output.tag_cget("input", "foreground"), GLASS_THEME["glow_input"])
+            self.assertEqual(app.output.tag_cget("result", "foreground"), "#D9C2FF")
         finally:
             root.destroy()
 
