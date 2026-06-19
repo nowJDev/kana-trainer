@@ -23,6 +23,7 @@ from .quiz import (
     WrongAnswerStore,
     build_multiple_choice,
     build_particle_meaning_choice,
+    build_particle_question_items,
     find_entry_by_romaji,
     is_correct_romaji,
     random_prompt,
@@ -106,6 +107,7 @@ class QuizSession:
     expected_symbol: str = ""
     expected_romaji: str = ""
     choices: list[KanaEntry] | None = None
+    particle_items: tuple[dict[str, object], ...] = ()
 
 
 class KanaTrainerApp:
@@ -544,7 +546,8 @@ class KanaTrainerApp:
 
     def start_particle_meaning_quiz(self) -> None:
         entries = tuple((str(item["particle"]), str(item["meaning"])) for item in get_particles())
-        self.session = QuizSession(title="조사 뜻 맞히기", mode="particle", entries=entries)
+        questions = tuple(build_particle_question_items(get_particles(), count=DEFAULT_QUESTION_COUNT))
+        self.session = QuizSession(title="조사 뜻 맞히기", mode="particle", entries=entries, particle_items=questions)
         self.handler = self.handle_particle_answer
         self.clear_output()
         self.write("조사 뜻 맞히기")
@@ -556,7 +559,7 @@ class KanaTrainerApp:
             self.finish_session()
             return
         session.index += 1
-        item = random.choice(get_particles())
+        item = session.particle_items[session.index - 1]
         particle = str(item["particle"])
         reading = str(item["reading"])
         meaning = str(item["meaning"])

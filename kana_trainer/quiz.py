@@ -11,6 +11,7 @@ from typing import Iterable
 from .kana import KanaEntry
 
 ParticleMeaningChoice = tuple[str, str]
+ParticleItem = dict[str, object]
 
 ROMAJI_ALIASES: dict[str, set[str]] = {
     "shi": {"shi", "si"},
@@ -123,6 +124,25 @@ def build_particle_meaning_choice(
     choices = [answer, *rng.sample(distractors, 3)]
     rng.shuffle(choices)
     return choices
+
+
+def build_particle_question_items(
+    particles: Iterable[ParticleItem],
+    *,
+    count: int,
+    rng_seed: int | None = None,
+) -> list[ParticleItem]:
+    pool = list(particles)
+    if count < 0:
+        raise ValueError("question count must be zero or greater")
+    if count <= len(pool):
+        return random.Random(rng_seed).sample(pool, count)
+
+    rng = random.Random(rng_seed)
+    questions = pool[:]
+    rng.shuffle(questions)
+    questions.extend(rng.choice(pool) for _index in range(count - len(pool)))
+    return questions
 
 
 def find_entry_by_romaji(expected_romaji: str, entries: Iterable[KanaEntry]) -> KanaEntry:

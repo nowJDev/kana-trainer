@@ -21,6 +21,7 @@ from .quiz import (
     WrongAnswerStore,
     build_multiple_choice,
     build_particle_meaning_choice,
+    build_particle_question_items,
     find_entry_by_romaji,
     is_correct_romaji,
     random_prompt,
@@ -165,11 +166,11 @@ def run_particle_meaning_quiz(
     count: int = DEFAULT_QUESTION_COUNT,
 ) -> None:
     particles = get_particles()
+    questions = build_particle_question_items(particles, count=count)
     print("\n조사 뜻 맞히기")
     correct = 0
 
-    for index in range(1, count + 1):
-        item = random.choice(particles)
+    for index, item in enumerate(questions, start=1):
         particle = str(item["particle"])
         reading = str(item["reading"])
         meaning = str(item["meaning"])
