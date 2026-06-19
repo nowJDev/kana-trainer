@@ -32,6 +32,7 @@ from .quiz import (
     is_correct_romaji,
     kana_level_mode,
 )
+from .resources import resource_path
 from .terminal import clear_screen, input_prompt, pause_if_interactive
 
 DEFAULT_QUESTION_COUNT = 10
@@ -384,7 +385,7 @@ def print_particle_reference() -> None:
 
 
 def print_original_markdown() -> None:
-    markdown_path = Path(__file__).resolve().parents[1] / "일본어.md"
+    markdown_path = resource_path("일본어.md")
     if not markdown_path.exists():
         print("\n일본어.md 파일을 찾을 수 없습니다.")
         return

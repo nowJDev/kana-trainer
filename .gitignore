@@ -14,5 +14,8 @@ env/
 .mypy_cache/
 .ruff_cache/
 
+build/
+dist/
+
 .kana-trainer/
 wrong-answers.json

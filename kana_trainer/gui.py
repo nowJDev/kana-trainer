@@ -36,6 +36,7 @@ from .quiz import (
     is_correct_romaji,
     kana_level_mode,
 )
+from .resources import resource_path
 from .settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, AppSettings, SettingsStore, clamp_font_size, window_geometry
 
 InputHandler = Callable[[str], None]
@@ -908,9 +909,7 @@ class KanaTrainerApp:
         self.write_return_hint()
 
     def show_original_markdown(self) -> None:
-        from pathlib import Path
-
-        markdown_path = Path(__file__).resolve().parents[1] / "일본어.md"
+        markdown_path = resource_path("일본어.md")
         self.clear_output()
         if not markdown_path.exists():
             self.write("일본어.md 파일을 찾을 수 없습니다.", "bad")
