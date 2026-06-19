@@ -19,9 +19,11 @@ from .kana import (
 from .quiz import (
     StudyHistoryStore,
     WrongAnswerStore,
+    build_example_question_items,
     build_multiple_choice,
     build_particle_meaning_choice,
     build_particle_question_items,
+    collect_example_items,
     find_entry_by_romaji,
     is_correct_romaji,
     random_prompt,
@@ -193,6 +195,33 @@ def run_particle_meaning_quiz(
         history_store.record_session("조사 뜻 맞히기", "particle", correct=correct, total=count)
 
 
+def run_example_romaji_quiz(
+    store: WrongAnswerStore,
+    *,
+    history_store: StudyHistoryStore | None = None,
+    count: int = DEFAULT_QUESTION_COUNT,
+) -> None:
+    questions = build_example_question_items(collect_example_items(), count=count)
+    print("\n예문 로마자 입력")
+    correct = 0
+
+    for index, (category, script_label, word, romaji, reading, meaning) in enumerate(questions, start=1):
+        print(f"\n문제 {index}/{count}: [{script_label} {category}] {word}")
+        print(f"읽기 힌트: {reading}")
+        print(f"뜻: {meaning}")
+        answer = input("> ").strip()
+        if is_correct_romaji(answer, romaji):
+            print("정답.")
+            correct += 1
+        else:
+            print(f"오답. 정답은 {romaji}.")
+            store.record(word, romaji, answer)
+
+    print(f"\n결과: {correct}/{count} 정답.")
+    if history_store is not None:
+        history_store.record_session("예문 로마자 입력", "example", correct=correct, total=count)
+
+
 def run_wrong_answer_review(store: WrongAnswerStore, *, history_store: StudyHistoryStore | None = None) -> None:
     entries = store.as_entries()
     if not entries:
@@ -308,10 +337,11 @@ def run_menu() -> None:
         print("3. 로마자 보고 히라가나 선택")
         print("4. 히라가나-가타카나 매칭")
         print("5. 조사 뜻 맞히기")
-        print("6. 오답 복습")
-        print("7. 오답 기록 보기")
-        print("8. 학습 기록 보기")
-        print("9. 일본어.md 참고 자료 보기")
+        print("6. 예문 로마자 입력")
+        print("7. 오답 복습")
+        print("8. 오답 기록 보기")
+        print("9. 학습 기록 보기")
+        print("10. 일본어.md 참고 자료 보기")
         print("0. 종료")
         choice = input("> ").strip()
 
@@ -326,12 +356,14 @@ def run_menu() -> None:
         elif choice == "5":
             run_particle_meaning_quiz(history_store=history_store)
         elif choice == "6":
-            run_wrong_answer_review(store, history_store=history_store)
+            run_example_romaji_quiz(store, history_store=history_store)
         elif choice == "7":
-            print_wrong_answer_summary(store)
+            run_wrong_answer_review(store, history_store=history_store)
         elif choice == "8":
-            print_study_history_summary(history_store)
+            print_wrong_answer_summary(store)
         elif choice == "9":
+            print_study_history_summary(history_store)
+        elif choice == "10":
             run_reference_menu()
         elif choice == "0":
             print("다음에 또 연습해요.")

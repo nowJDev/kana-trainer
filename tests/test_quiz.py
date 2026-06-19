@@ -15,9 +15,11 @@ from kana_trainer.kana import (
 from kana_trainer.quiz import (
     StudyHistoryStore,
     WrongAnswerStore,
+    build_example_question_items,
     build_multiple_choice,
     build_particle_meaning_choice,
     build_particle_question_items,
+    collect_example_items,
     find_entry_by_romaji,
     is_correct_romaji,
 )
@@ -89,6 +91,19 @@ class QuizLogicTests(unittest.TestCase):
 
         self.assertEqual(len(questions), 10)
         self.assertEqual(len({str(item["particle"]) for item in questions}), 10)
+
+    def test_collect_example_items_includes_reading_and_sokuon_examples(self):
+        examples = collect_example_items()
+
+        self.assertEqual(len(examples), 18)
+        self.assertIn(("읽기", "히라가나", "きょう", "kyou", "쿄우", "오늘/오늘날; 今日"), examples)
+        self.assertIn(("촉음", "가타카나", "ガッコウ", "gakkou", "가(ㄲ)꼬우", "학교"), examples)
+
+    def test_build_example_question_items_avoids_repeats_within_pool_size(self):
+        questions = build_example_question_items(collect_example_items(), count=10, rng_seed=7)
+
+        self.assertEqual(len(questions), 10)
+        self.assertEqual(len({item[2] for item in questions}), 10)
 
     def test_find_entry_by_romaji_returns_expected_symbol(self):
         self.assertEqual(find_entry_by_romaji("ka", get_kana("hiragana")), ("か", "ka"))

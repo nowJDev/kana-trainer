@@ -8,8 +8,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
-from .kana import KanaEntry
+from .kana import KanaEntry, get_reading_examples, get_sokuon_examples
 
+ExampleItem = tuple[str, str, str, str, str, str]
 ParticleMeaningChoice = tuple[str, str]
 ParticleItem = dict[str, object]
 
@@ -133,6 +134,39 @@ def build_particle_question_items(
     rng_seed: int | None = None,
 ) -> list[ParticleItem]:
     pool = list(particles)
+    if count < 0:
+        raise ValueError("question count must be zero or greater")
+    if count <= len(pool):
+        return random.Random(rng_seed).sample(pool, count)
+
+    rng = random.Random(rng_seed)
+    questions = pool[:]
+    rng.shuffle(questions)
+    questions.extend(rng.choice(pool) for _index in range(count - len(pool)))
+    return questions
+
+
+def collect_example_items() -> tuple[ExampleItem, ...]:
+    examples: list[ExampleItem] = []
+    for script, script_label in (("hiragana", "히라가나"), ("katakana", "가타카나")):
+        examples.extend(
+            ("읽기", script_label, word, romaji, reading, meaning)
+            for word, romaji, reading, meaning in get_reading_examples(script)
+        )
+        examples.extend(
+            ("촉음", script_label, word, romaji, reading, meaning)
+            for word, romaji, reading, meaning in get_sokuon_examples(script)
+        )
+    return tuple(examples)
+
+
+def build_example_question_items(
+    examples: Iterable[ExampleItem],
+    *,
+    count: int,
+    rng_seed: int | None = None,
+) -> list[ExampleItem]:
+    pool = list(examples)
     if count < 0:
         raise ValueError("question count must be zero or greater")
     if count <= len(pool):

@@ -19,11 +19,14 @@ from .kana import (
     pair_by_romaji,
 )
 from .quiz import (
+    ExampleItem,
     StudyHistoryStore,
     WrongAnswerStore,
+    build_example_question_items,
     build_multiple_choice,
     build_particle_meaning_choice,
     build_particle_question_items,
+    collect_example_items,
     find_entry_by_romaji,
     is_correct_romaji,
     random_prompt,
@@ -55,10 +58,11 @@ MAIN_MENU_OPTIONS: tuple[MenuOption, ...] = (
     ("3", "로마자 보고 히라가나 선택"),
     ("4", "히라가나-가타카나 매칭"),
     ("5", "조사 뜻 맞히기"),
-    ("6", "오답 복습"),
-    ("7", "오답 기록 보기"),
-    ("8", "학습 기록 보기"),
-    ("9", "일본어.md 참고 자료 보기"),
+    ("6", "예문 로마자 입력"),
+    ("7", "오답 복습"),
+    ("8", "오답 기록 보기"),
+    ("9", "학습 기록 보기"),
+    ("10", "일본어.md 참고 자료 보기"),
     ("0", "종료"),
 )
 REFERENCE_MENU_OPTIONS: tuple[MenuOption, ...] = (
@@ -108,6 +112,7 @@ class QuizSession:
     expected_romaji: str = ""
     choices: list[KanaEntry] | None = None
     particle_items: tuple[dict[str, object], ...] = ()
+    example_items: tuple[ExampleItem, ...] = ()
 
 
 class KanaTrainerApp:
@@ -425,12 +430,14 @@ class KanaTrainerApp:
         elif value == "5":
             self.start_particle_meaning_quiz()
         elif value == "6":
-            self.start_wrong_answer_review()
+            self.start_example_romaji_quiz()
         elif value == "7":
-            self.show_wrong_answer_summary()
+            self.start_wrong_answer_review()
         elif value == "8":
-            self.show_study_history_summary()
+            self.show_wrong_answer_summary()
         elif value == "9":
+            self.show_study_history_summary()
+        elif value == "10":
             self.show_reference_menu()
         elif value == "0":
             self.close()
@@ -580,6 +587,49 @@ class KanaTrainerApp:
         else:
             self.write_segments((("오답. ", "bad"), ("정답은 ", "bad"), (session.expected_romaji, "answer"), (".", "bad")))
         self.next_particle_question()
+
+    def start_example_romaji_quiz(self) -> None:
+        questions = tuple(build_example_question_items(collect_example_items(), count=DEFAULT_QUESTION_COUNT))
+        entries = tuple(
+            (word, romaji)
+            for _category, _script_label, word, romaji, _reading, _meaning in questions
+        )
+        self.session = QuizSession(title="예문 로마자 입력", mode="example", entries=entries, example_items=questions)
+        self.handler = self.handle_example_answer
+        self.clear_output()
+        self.set_option_buttons(())
+        self.write("예문 로마자 입력")
+        self.next_example_question()
+
+    def next_example_question(self) -> None:
+        session = self.require_session()
+        if session.index >= session.count:
+            self.finish_session()
+            return
+        session.index += 1
+        category, script_label, word, romaji, reading, meaning = session.example_items[session.index - 1]
+        session.expected_symbol = word
+        session.expected_romaji = romaji
+        self.write("")
+        self.write_segments(
+            (
+                (f"문제 {session.index}/{session.count}: ", "question"),
+                (f"[{script_label} {category}] ", "menu"),
+                (word, "kana"),
+            )
+        )
+        self.write(f"읽기 힌트: {reading}", "muted")
+        self.write(f"뜻: {meaning}", "muted")
+
+    def handle_example_answer(self, value: str) -> None:
+        session = self.require_session()
+        if is_correct_romaji(value, session.expected_romaji):
+            session.correct += 1
+            self.write("정답.", "good")
+        else:
+            self.store.record(session.expected_symbol, session.expected_romaji, value)
+            self.write_segments((("오답. ", "bad"), ("정답은 ", "bad"), (session.expected_romaji, "answer"), (".", "bad")))
+        self.next_example_question()
 
     def is_expected_choice(self, value: str, session: QuizSession, *, compare_symbol: bool = False) -> bool:
         if not value.isdigit() or session.choices is None:
