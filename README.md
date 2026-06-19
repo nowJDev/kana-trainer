@@ -43,6 +43,8 @@ python -m kana_trainer --demo
 - `일본어.md`의 헷갈리는 쌍, 촉음 예문, 읽기 예문, 조사 참고 자료 보기.
 - `일본어.md` 원문 전체 보기.
 
+히라가나, 가타카나, 로마자 선택, 히라가나-가타카나 매칭 퀴즈는 기본 20문제를 중복 없이 출제합니다. 조사와 예문 퀴즈는 기본 10문제를 중복 없이 출제합니다.
+
 오답 기록은 기본적으로 사용자 홈의 `.kana-trainer/wrong-answers.json`에 저장됩니다. 다른 위치를 쓰려면 `KANA_TRAINER_WRONG_PATH` 환경변수를 설정하면 됩니다.
 
 학습 기록은 기본적으로 사용자 홈의 `.kana-trainer/study-history.json`에 저장됩니다. 다른 위치를 쓰려면 `KANA_TRAINER_HISTORY_PATH` 환경변수를 설정하면 됩니다.

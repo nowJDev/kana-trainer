@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import random
 import sys
 from pathlib import Path
 
@@ -20,17 +19,19 @@ from .quiz import (
     StudyHistoryStore,
     WrongAnswerStore,
     build_example_question_items,
+    build_kana_question_items,
     build_multiple_choice,
     build_particle_meaning_choice,
     build_particle_question_items,
+    build_romaji_question_items,
     collect_example_items,
     find_entry_by_romaji,
     is_correct_romaji,
-    random_prompt,
 )
 from .terminal import clear_screen, input_prompt, pause_if_interactive
 
 DEFAULT_QUESTION_COUNT = 10
+KANA_QUESTION_COUNT = 20
 
 
 def configure_stdio() -> None:
@@ -70,17 +71,17 @@ def run_romaji_quiz(
     store: WrongAnswerStore,
     *,
     history_store: StudyHistoryStore | None = None,
-    count: int = DEFAULT_QUESTION_COUNT,
+    count: int = KANA_QUESTION_COUNT,
 ) -> None:
     print(f"\n{title}")
     correct = 0
     best_streak = 0
     streak = 0
+    questions = build_kana_question_items(entries, count=count)
 
-    for index in range(1, count + 1):
-        prompt = random_prompt(entries)
+    for index, (symbol, romaji) in enumerate(questions, start=1):
         print(f"\n문제 {index}/{count}")
-        if ask_question(prompt.symbol, prompt.romaji, store):
+        if ask_question(symbol, romaji, store):
             correct += 1
             streak += 1
             best_streak = max(best_streak, streak)
@@ -99,13 +100,13 @@ def run_choice_quiz(
     store: WrongAnswerStore,
     *,
     history_store: StudyHistoryStore | None = None,
-    count: int = DEFAULT_QUESTION_COUNT,
+    count: int = KANA_QUESTION_COUNT,
 ) -> None:
     print(f"\n{title}")
     correct = 0
+    questions = build_romaji_question_items(entries, count=count)
 
-    for index in range(1, count + 1):
-        _symbol, romaji = random.choice(entries)
+    for index, (_symbol, romaji) in enumerate(questions, start=1):
         expected_symbol, _expected_romaji = find_entry_by_romaji(romaji, entries)
         choices = build_multiple_choice(romaji, entries)
         print(f"\n문제 {index}/{count}: {romaji} 에 해당하는 문자는?")
@@ -131,15 +132,14 @@ def run_matching_quiz(
     store: WrongAnswerStore,
     *,
     history_store: StudyHistoryStore | None = None,
-    count: int = DEFAULT_QUESTION_COUNT,
+    count: int = KANA_QUESTION_COUNT,
 ) -> None:
     pairs = pair_by_romaji()
-    romaji_values = list(pairs.keys())
+    questions = build_romaji_question_items(tuple((item[0], romaji) for romaji, item in pairs.items()), count=count)
     print("\n히라가나-가타카나 매칭")
     correct = 0
 
-    for index in range(1, count + 1):
-        romaji = random.choice(romaji_values)
+    for index, (_symbol, romaji) in enumerate(questions, start=1):
         hiragana, katakana = pairs[romaji]
         katakana_entries = tuple((item[1], key) for key, item in pairs.items())
         choices = build_multiple_choice(romaji, katakana_entries)

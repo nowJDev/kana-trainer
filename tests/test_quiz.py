@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from kana_trainer.cli import KANA_QUESTION_COUNT
 from kana_trainer.kana import (
     get_beginner_patterns,
     get_confusing_pairs,
@@ -16,9 +17,11 @@ from kana_trainer.quiz import (
     StudyHistoryStore,
     WrongAnswerStore,
     build_example_question_items,
+    build_kana_question_items,
     build_multiple_choice,
     build_particle_meaning_choice,
     build_particle_question_items,
+    build_romaji_question_items,
     collect_example_items,
     find_entry_by_romaji,
     is_correct_romaji,
@@ -66,6 +69,9 @@ class KanaDataTests(unittest.TestCase):
 
 
 class QuizLogicTests(unittest.TestCase):
+    def test_kana_session_question_count_is_twenty(self):
+        self.assertEqual(KANA_QUESTION_COUNT, 20)
+
     def test_is_correct_romaji_accepts_case_and_common_aliases(self):
         self.assertTrue(is_correct_romaji("SHI", "shi"))
         self.assertTrue(is_correct_romaji("si", "shi"))
@@ -78,6 +84,18 @@ class QuizLogicTests(unittest.TestCase):
         self.assertEqual(len(choices), 4)
         self.assertEqual(choices.count(("か", "ka")), 1)
         self.assertEqual(len({symbol for symbol, _romaji in choices}), 4)
+
+    def test_build_kana_question_items_avoids_symbol_repeats(self):
+        questions = build_kana_question_items(get_kana("hiragana"), count=20, rng_seed=7)
+
+        self.assertEqual(len(questions), 20)
+        self.assertEqual(len({symbol for symbol, _romaji in questions}), 20)
+
+    def test_build_romaji_question_items_avoids_prompt_repeats(self):
+        questions = build_romaji_question_items(get_kana("hiragana"), count=20, rng_seed=7)
+
+        self.assertEqual(len(questions), 20)
+        self.assertEqual(len({romaji for _symbol, romaji in questions}), 20)
 
     def test_build_particle_meaning_choice_contains_answer_once(self):
         choices = build_particle_meaning_choice("은/는", get_particles(), rng_seed=7)

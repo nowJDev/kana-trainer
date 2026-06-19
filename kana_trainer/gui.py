@@ -1,13 +1,12 @@
 # 터미널풍 GUI로 가나 학습 세션을 실행한다.
 from __future__ import annotations
 
-import random
 import tkinter as tk
 from dataclasses import dataclass, replace
 from tkinter import font, scrolledtext, ttk
 from typing import Callable
 
-from .cli import DEFAULT_QUESTION_COUNT, default_history_path, default_store_path
+from .cli import DEFAULT_QUESTION_COUNT, KANA_QUESTION_COUNT, default_history_path, default_store_path
 from .kana import (
     KanaEntry,
     get_beginner_patterns,
@@ -23,13 +22,14 @@ from .quiz import (
     StudyHistoryStore,
     WrongAnswerStore,
     build_example_question_items,
+    build_kana_question_items,
     build_multiple_choice,
     build_particle_meaning_choice,
     build_particle_question_items,
+    build_romaji_question_items,
     collect_example_items,
     find_entry_by_romaji,
     is_correct_romaji,
-    random_prompt,
 )
 from .settings import MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, AppSettings, SettingsStore, clamp_font_size, window_geometry
 
@@ -111,6 +111,7 @@ class QuizSession:
     expected_symbol: str = ""
     expected_romaji: str = ""
     choices: list[KanaEntry] | None = None
+    question_entries: tuple[KanaEntry, ...] = ()
     particle_items: tuple[dict[str, object], ...] = ()
     example_items: tuple[ExampleItem, ...] = ()
 
@@ -445,7 +446,14 @@ class KanaTrainerApp:
             self.write("메뉴 번호를 다시 입력하세요.", "bad")
 
     def start_romaji_quiz(self, title: str, entries: tuple[KanaEntry, ...]) -> None:
-        self.session = QuizSession(title=title, mode="romaji", entries=entries)
+        questions = tuple(build_kana_question_items(entries, count=KANA_QUESTION_COUNT))
+        self.session = QuizSession(
+            title=title,
+            mode="romaji",
+            entries=entries,
+            count=KANA_QUESTION_COUNT,
+            question_entries=questions,
+        )
         self.handler = self.handle_romaji_answer
         self.clear_output()
         self.set_option_buttons(())
@@ -458,12 +466,12 @@ class KanaTrainerApp:
             self.finish_session()
             return
         session.index += 1
-        prompt = random_prompt(session.entries)
-        session.expected_symbol = prompt.symbol
-        session.expected_romaji = prompt.romaji
+        symbol, romaji = session.question_entries[session.index - 1]
+        session.expected_symbol = symbol
+        session.expected_romaji = romaji
         self.write("")
         self.write(f"문제 {session.index}/{session.count}", "question")
-        self.write_segments(((prompt.symbol, "kana"), (" 의 읽는 법은?", "question")))
+        self.write_segments(((symbol, "kana"), (" 의 읽는 법은?", "question")))
 
     def handle_romaji_answer(self, value: str) -> None:
         session = self.require_session()
@@ -480,7 +488,14 @@ class KanaTrainerApp:
         self.next_romaji_question()
 
     def start_choice_quiz(self, title: str, entries: tuple[KanaEntry, ...]) -> None:
-        self.session = QuizSession(title=title, mode="choice", entries=entries)
+        questions = tuple(build_romaji_question_items(entries, count=KANA_QUESTION_COUNT))
+        self.session = QuizSession(
+            title=title,
+            mode="choice",
+            entries=entries,
+            count=KANA_QUESTION_COUNT,
+            question_entries=questions,
+        )
         self.handler = self.handle_choice_answer
         self.clear_output()
         self.write(title)
@@ -492,7 +507,7 @@ class KanaTrainerApp:
             self.finish_session()
             return
         session.index += 1
-        _symbol, romaji = random.choice(session.entries)
+        _symbol, romaji = session.question_entries[session.index - 1]
         expected_symbol, _expected_romaji = find_entry_by_romaji(romaji, session.entries)
         session.expected_symbol = expected_symbol
         session.expected_romaji = romaji
@@ -516,7 +531,14 @@ class KanaTrainerApp:
     def start_matching_quiz(self) -> None:
         pairs = pair_by_romaji()
         entries = tuple((item[0], romaji) for romaji, item in pairs.items())
-        self.session = QuizSession(title="히라가나-가타카나 매칭", mode="matching", entries=entries)
+        questions = tuple(build_romaji_question_items(entries, count=KANA_QUESTION_COUNT))
+        self.session = QuizSession(
+            title="히라가나-가타카나 매칭",
+            mode="matching",
+            entries=entries,
+            count=KANA_QUESTION_COUNT,
+            question_entries=questions,
+        )
         self.handler = self.handle_matching_answer
         self.clear_output()
         self.write("히라가나-가타카나 매칭")
@@ -529,7 +551,7 @@ class KanaTrainerApp:
             return
         session.index += 1
         pairs = pair_by_romaji()
-        romaji = random.choice(list(pairs.keys()))
+        _symbol, romaji = session.question_entries[session.index - 1]
         hiragana, katakana = pairs[romaji]
         katakana_entries = tuple((item[1], key) for key, item in pairs.items())
         session.expected_symbol = katakana
@@ -671,6 +693,9 @@ class KanaTrainerApp:
             mode="romaji",
             entries=entries,
             count=min(DEFAULT_QUESTION_COUNT, len(entries)),
+            question_entries=tuple(
+                build_kana_question_items(entries, count=min(DEFAULT_QUESTION_COUNT, len(entries)))
+            ),
         )
         self.handler = self.handle_romaji_answer
         self.clear_output()

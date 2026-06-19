@@ -105,6 +105,37 @@ def build_multiple_choice(
     return choices
 
 
+def build_kana_question_items(
+    entries: Iterable[KanaEntry],
+    *,
+    count: int,
+    rng_seed: int | None = None,
+) -> list[KanaEntry]:
+    pool = list(entries)
+    if count < 0:
+        raise ValueError("question count must be zero or greater")
+    if count <= len(pool):
+        return random.Random(rng_seed).sample(pool, count)
+
+    rng = random.Random(rng_seed)
+    questions = pool[:]
+    rng.shuffle(questions)
+    questions.extend(rng.choice(pool) for _index in range(count - len(pool)))
+    return questions
+
+
+def build_romaji_question_items(
+    entries: Iterable[KanaEntry],
+    *,
+    count: int,
+    rng_seed: int | None = None,
+) -> list[KanaEntry]:
+    by_romaji: dict[str, KanaEntry] = {}
+    for entry in entries:
+        by_romaji.setdefault(entry[1], entry)
+    return build_kana_question_items(by_romaji.values(), count=count, rng_seed=rng_seed)
+
+
 def build_particle_meaning_choice(
     expected_meaning: str,
     particles: Iterable[dict[str, object]],
