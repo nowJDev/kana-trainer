@@ -10,6 +10,8 @@ from typing import Iterable
 
 from .kana import KanaEntry
 
+ParticleMeaningChoice = tuple[str, str]
+
 ROMAJI_ALIASES: dict[str, set[str]] = {
     "shi": {"shi", "si"},
     "chi": {"chi", "ti"},
@@ -92,6 +94,28 @@ def build_multiple_choice(
     answer_candidates = [entry for entry in pool if entry[1] == expected_romaji]
     if not answer_candidates:
         raise ValueError(f"unknown romaji: {expected_romaji}")
+
+    rng = random.Random(rng_seed)
+    answer = answer_candidates[0]
+    distractors = [entry for entry in pool if entry != answer]
+    choices = [answer, *rng.sample(distractors, 3)]
+    rng.shuffle(choices)
+    return choices
+
+
+def build_particle_meaning_choice(
+    expected_meaning: str,
+    particles: Iterable[dict[str, object]],
+    *,
+    rng_seed: int | None = None,
+) -> list[ParticleMeaningChoice]:
+    pool = [(str(item["particle"]), str(item["meaning"])) for item in particles]
+    if len(pool) < 4:
+        raise ValueError("at least four particles are required")
+
+    answer_candidates = [entry for entry in pool if entry[1] == expected_meaning]
+    if not answer_candidates:
+        raise ValueError(f"unknown particle meaning: {expected_meaning}")
 
     rng = random.Random(rng_seed)
     answer = answer_candidates[0]

@@ -20,6 +20,7 @@ from .quiz import (
     StudyHistoryStore,
     WrongAnswerStore,
     build_multiple_choice,
+    build_particle_meaning_choice,
     find_entry_by_romaji,
     is_correct_romaji,
     random_prompt,
@@ -158,6 +159,39 @@ def run_matching_quiz(
         history_store.record_session("히라가나-가타카나 매칭", "matching", correct=correct, total=count)
 
 
+def run_particle_meaning_quiz(
+    *,
+    history_store: StudyHistoryStore | None = None,
+    count: int = DEFAULT_QUESTION_COUNT,
+) -> None:
+    particles = get_particles()
+    print("\n조사 뜻 맞히기")
+    correct = 0
+
+    for index in range(1, count + 1):
+        item = random.choice(particles)
+        particle = str(item["particle"])
+        reading = str(item["reading"])
+        meaning = str(item["meaning"])
+        choices = build_particle_meaning_choice(meaning, particles)
+        print(f"\n문제 {index}/{count}: 조사 {particle}({reading})의 뜻은?")
+        for choice_index, (_choice_particle, choice_meaning) in enumerate(choices, start=1):
+            print(f"{choice_index}. {choice_meaning}")
+
+        answer = input("> ").strip()
+        if answer.isdigit() and 1 <= int(answer) <= len(choices):
+            _picked_particle, picked_meaning = choices[int(answer) - 1]
+            if picked_meaning == meaning:
+                print("정답.")
+                correct += 1
+                continue
+        print(f"오답. 정답은 {meaning}.")
+
+    print(f"\n결과: {correct}/{count} 정답.")
+    if history_store is not None:
+        history_store.record_session("조사 뜻 맞히기", "particle", correct=correct, total=count)
+
+
 def run_wrong_answer_review(store: WrongAnswerStore, *, history_store: StudyHistoryStore | None = None) -> None:
     entries = store.as_entries()
     if not entries:
@@ -272,10 +306,11 @@ def run_menu() -> None:
         print("2. 가타카나 보고 로마자 입력")
         print("3. 로마자 보고 히라가나 선택")
         print("4. 히라가나-가타카나 매칭")
-        print("5. 오답 복습")
-        print("6. 오답 기록 보기")
-        print("7. 학습 기록 보기")
-        print("8. 일본어.md 참고 자료 보기")
+        print("5. 조사 뜻 맞히기")
+        print("6. 오답 복습")
+        print("7. 오답 기록 보기")
+        print("8. 학습 기록 보기")
+        print("9. 일본어.md 참고 자료 보기")
         print("0. 종료")
         choice = input("> ").strip()
 
@@ -288,12 +323,14 @@ def run_menu() -> None:
         elif choice == "4":
             run_matching_quiz(store, history_store=history_store)
         elif choice == "5":
-            run_wrong_answer_review(store, history_store=history_store)
+            run_particle_meaning_quiz(history_store=history_store)
         elif choice == "6":
-            print_wrong_answer_summary(store)
+            run_wrong_answer_review(store, history_store=history_store)
         elif choice == "7":
-            print_study_history_summary(history_store)
+            print_wrong_answer_summary(store)
         elif choice == "8":
+            print_study_history_summary(history_store)
+        elif choice == "9":
             run_reference_menu()
         elif choice == "0":
             print("다음에 또 연습해요.")

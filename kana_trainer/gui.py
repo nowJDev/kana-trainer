@@ -22,6 +22,7 @@ from .quiz import (
     StudyHistoryStore,
     WrongAnswerStore,
     build_multiple_choice,
+    build_particle_meaning_choice,
     find_entry_by_romaji,
     is_correct_romaji,
     random_prompt,
@@ -52,10 +53,11 @@ MAIN_MENU_OPTIONS: tuple[MenuOption, ...] = (
     ("2", "가타카나 보고 로마자 입력"),
     ("3", "로마자 보고 히라가나 선택"),
     ("4", "히라가나-가타카나 매칭"),
-    ("5", "오답 복습"),
-    ("6", "오답 기록 보기"),
-    ("7", "학습 기록 보기"),
-    ("8", "일본어.md 참고 자료 보기"),
+    ("5", "조사 뜻 맞히기"),
+    ("6", "오답 복습"),
+    ("7", "오답 기록 보기"),
+    ("8", "학습 기록 보기"),
+    ("9", "일본어.md 참고 자료 보기"),
     ("0", "종료"),
 )
 REFERENCE_MENU_OPTIONS: tuple[MenuOption, ...] = (
@@ -419,12 +421,14 @@ class KanaTrainerApp:
         elif value == "4":
             self.start_matching_quiz()
         elif value == "5":
-            self.start_wrong_answer_review()
+            self.start_particle_meaning_quiz()
         elif value == "6":
-            self.show_wrong_answer_summary()
+            self.start_wrong_answer_review()
         elif value == "7":
-            self.show_study_history_summary()
+            self.show_wrong_answer_summary()
         elif value == "8":
+            self.show_study_history_summary()
+        elif value == "9":
             self.show_reference_menu()
         elif value == "0":
             self.close()
@@ -537,6 +541,42 @@ class KanaTrainerApp:
             self.store.record(session.expected_symbol, session.expected_romaji, value)
             self.write_segments((("오답. ", "bad"), ("정답은 ", "bad"), (session.expected_symbol, "answer"), (".", "bad")))
         self.next_matching_question()
+
+    def start_particle_meaning_quiz(self) -> None:
+        entries = tuple((str(item["particle"]), str(item["meaning"])) for item in get_particles())
+        self.session = QuizSession(title="조사 뜻 맞히기", mode="particle", entries=entries)
+        self.handler = self.handle_particle_answer
+        self.clear_output()
+        self.write("조사 뜻 맞히기")
+        self.next_particle_question()
+
+    def next_particle_question(self) -> None:
+        session = self.require_session()
+        if session.index >= session.count:
+            self.finish_session()
+            return
+        session.index += 1
+        item = random.choice(get_particles())
+        particle = str(item["particle"])
+        reading = str(item["reading"])
+        meaning = str(item["meaning"])
+        session.expected_symbol = particle
+        session.expected_romaji = meaning
+        session.choices = build_particle_meaning_choice(meaning, get_particles())
+        self.set_option_buttons(tuple((str(index), choice_meaning) for index, (_particle, choice_meaning) in enumerate(session.choices, start=1)))
+        self.write("")
+        self.write_segments(((f"문제 {session.index}/{session.count}: ", "question"), (particle, "kana"), (f"({reading})의 뜻은?", "question")))
+        for index, (_choice_particle, choice_meaning) in enumerate(session.choices, start=1):
+            self.write_segments(((f"{index}. ", "menu"), (choice_meaning, None)))
+
+    def handle_particle_answer(self, value: str) -> None:
+        session = self.require_session()
+        if self.is_expected_choice(value, session):
+            session.correct += 1
+            self.write("정답.", "good")
+        else:
+            self.write_segments((("오답. ", "bad"), ("정답은 ", "bad"), (session.expected_romaji, "answer"), (".", "bad")))
+        self.next_particle_question()
 
     def is_expected_choice(self, value: str, session: QuizSession, *, compare_symbol: bool = False) -> bool:
         if not value.isdigit() or session.choices is None:

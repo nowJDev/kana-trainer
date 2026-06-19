@@ -16,6 +16,7 @@ from kana_trainer.quiz import (
     StudyHistoryStore,
     WrongAnswerStore,
     build_multiple_choice,
+    build_particle_meaning_choice,
     find_entry_by_romaji,
     is_correct_romaji,
 )
@@ -74,6 +75,13 @@ class QuizLogicTests(unittest.TestCase):
         self.assertEqual(len(choices), 4)
         self.assertEqual(choices.count(("か", "ka")), 1)
         self.assertEqual(len({symbol for symbol, _romaji in choices}), 4)
+
+    def test_build_particle_meaning_choice_contains_answer_once(self):
+        choices = build_particle_meaning_choice("은/는", get_particles(), rng_seed=7)
+
+        self.assertEqual(len(choices), 4)
+        self.assertEqual(choices.count(("は", "은/는")), 1)
+        self.assertEqual(len({meaning for _particle, meaning in choices}), 4)
 
     def test_find_entry_by_romaji_returns_expected_symbol(self):
         self.assertEqual(find_entry_by_romaji("ka", get_kana("hiragana")), ("か", "ka"))
