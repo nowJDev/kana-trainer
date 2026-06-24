@@ -15,8 +15,11 @@ from kana_trainer.kana import (
     pair_by_romaji,
 )
 from kana_trainer.quiz import (
+    KANA_GAME_LIVES,
+    KanaGameState,
     StudyHistoryStore,
     WrongAnswerStore,
+    advance_kana_game_state,
     build_confusing_question_items,
     build_example_question_items,
     build_kana_question_items,
@@ -103,6 +106,40 @@ class QuizLogicTests(unittest.TestCase):
 
         self.assertEqual(len(questions), 20)
         self.assertEqual(len({symbol for symbol, _romaji in questions}), 20)
+
+    def test_kana_game_state_tracks_lives_and_consumed_questions(self):
+        state = KanaGameState(total=3)
+
+        state = advance_kana_game_state(state, is_correct=True)
+        self.assertEqual(state.correct, 1)
+        self.assertEqual(state.answered, 1)
+        self.assertEqual(state.lives, KANA_GAME_LIVES)
+        self.assertFalse(state.finished)
+
+        state = advance_kana_game_state(state, is_correct=False)
+        self.assertEqual(state.correct, 1)
+        self.assertEqual(state.answered, 2)
+        self.assertEqual(state.lives, KANA_GAME_LIVES - 1)
+        self.assertFalse(state.finished)
+
+    def test_kana_game_state_loses_at_zero_lives(self):
+        state = KanaGameState(total=10, lives=1)
+
+        state = advance_kana_game_state(state, is_correct=False)
+
+        self.assertTrue(state.lost)
+        self.assertTrue(state.finished)
+        self.assertFalse(state.won)
+
+    def test_kana_game_state_wins_after_all_questions_with_lives_left(self):
+        state = KanaGameState(total=2)
+
+        state = advance_kana_game_state(state, is_correct=True)
+        state = advance_kana_game_state(state, is_correct=True)
+
+        self.assertTrue(state.won)
+        self.assertTrue(state.finished)
+        self.assertFalse(state.lost)
 
     def test_build_romaji_question_items_avoids_prompt_repeats(self):
         questions = build_romaji_question_items(get_kana("hiragana"), count=20, rng_seed=7)

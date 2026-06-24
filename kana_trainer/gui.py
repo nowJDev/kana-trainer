@@ -21,8 +21,11 @@ from .kana import (
 from .quiz import (
     ConfusingItem,
     ExampleItem,
+    KANA_GAME_LIVES,
+    KanaGameState,
     StudyHistoryStore,
     WrongAnswerStore,
+    advance_kana_game_state,
     build_confusing_question_items,
     build_example_question_items,
     build_kana_question_items,
@@ -109,6 +112,7 @@ class QuizSession:
     current_hint: str = ""
     particle_items: tuple[dict[str, object], ...] = ()
     example_items: tuple[ExampleItem, ...] = ()
+    lives: int | None = None
 
 
 class KanaTrainerApp:
@@ -492,18 +496,22 @@ class KanaTrainerApp:
             )
 
     def start_romaji_quiz(self, title: str, entries: tuple[KanaEntry, ...], *, mode: str = "romaji") -> None:
-        questions = tuple(build_kana_question_items(entries, count=KANA_QUESTION_COUNT))
+        question_count = min(KANA_QUESTION_COUNT, len(entries))
+        questions = tuple(build_kana_question_items(entries, count=question_count))
         self.session = QuizSession(
             title=title,
             mode=mode,
             entries=entries,
-            count=KANA_QUESTION_COUNT,
+            count=question_count,
             question_entries=questions,
+            lives=KANA_GAME_LIVES,
         )
         self.handler = self.handle_romaji_answer
         self.clear_output()
         self.set_option_buttons(())
         self.write(title)
+        self.write(f"목표: {question_count}문제 전부 돌파", "muted")
+        self.write(f"목숨: {KANA_GAME_LIVES}/{KANA_GAME_LIVES}", "muted")
         self.next_romaji_question()
 
     def next_romaji_question(self) -> None:
@@ -516,12 +524,20 @@ class KanaTrainerApp:
         session.expected_symbol = symbol
         session.expected_romaji = romaji
         self.write("")
-        self.write(f"문제 {session.index}/{session.count}", "question")
+        if session.lives is None:
+            self.write(f"문제 {session.index}/{session.count}", "question")
+        else:
+            self.write(f"문제 {session.index}/{session.count} | 목숨 {session.lives}/{KANA_GAME_LIVES}", "question")
         self.write_segments(((symbol, "kana"), (" 의 읽는 법은?", "question")))
 
     def handle_romaji_answer(self, value: str) -> None:
         session = self.require_session()
-        if is_correct_romaji(value, session.expected_romaji):
+        is_correct = is_correct_romaji(value, session.expected_romaji)
+        if session.lives is not None:
+            self.handle_romaji_game_answer(value, is_correct)
+            return
+
+        if is_correct:
             session.correct += 1
             session.streak += 1
             session.best_streak = max(session.best_streak, session.streak)
@@ -531,6 +547,33 @@ class KanaTrainerApp:
             session.streak = 0
             self.store.record(session.expected_symbol, session.expected_romaji, value)
             self.write_segments((("오답. ", "bad"), ("정답은 ", "bad"), (session.expected_romaji, "answer"), (".", "bad")))
+        self.next_romaji_question()
+
+    def handle_romaji_game_answer(self, value: str, is_correct: bool) -> None:
+        session = self.require_session()
+        state = KanaGameState(
+            total=session.count,
+            lives=session.lives or 0,
+            correct=session.correct,
+            answered=session.index - 1,
+            streak=session.streak,
+            best_streak=session.best_streak,
+        )
+        state = advance_kana_game_state(state, is_correct=is_correct)
+        session.correct = state.correct
+        session.streak = state.streak
+        session.best_streak = state.best_streak
+        session.lives = state.lives
+        if is_correct:
+            self.write("정답.", "good")
+            self.write(f"연속 정답: {session.streak}", "muted")
+        else:
+            self.store.record(session.expected_symbol, session.expected_romaji, value)
+            self.write_segments((("오답. ", "bad"), ("정답은 ", "bad"), (session.expected_romaji, "answer"), (".", "bad")))
+            self.write(f"남은 목숨: {session.lives}/{KANA_GAME_LIVES}", "bad" if session.lives <= 1 else "muted")
+        if state.finished:
+            self.finish_session()
+            return
         self.next_romaji_question()
 
     def start_choice_quiz(self, title: str, entries: tuple[KanaEntry, ...], *, mode: str = "choice") -> None:
@@ -776,7 +819,17 @@ class KanaTrainerApp:
 
     def finish_session(self) -> None:
         session = self.require_session()
-        if session.mode.startswith("romaji"):
+        if session.lives is not None:
+            self.write("")
+            if session.lives > 0 and session.index >= session.count:
+                self.write("게임 승리. 모든 문제를 끝까지 돌파했습니다.", "good")
+            else:
+                self.write("게임 종료. 목숨이 모두 사라졌습니다.", "bad")
+            self.write(
+                f"결과: {session.correct}/{session.count} 정답, 남은 목숨 {session.lives}/{KANA_GAME_LIVES}, 최고 연속 정답 {session.best_streak}.",
+                "result",
+            )
+        elif session.mode.startswith("romaji"):
             self.write("")
             self.write(f"결과: {session.correct}/{session.count} 정답, 최고 연속 정답 {session.best_streak}.", "result")
         else:

@@ -17,8 +17,11 @@ from .kana import (
     pair_by_romaji,
 )
 from .quiz import (
+    KANA_GAME_LIVES,
+    KanaGameState,
     StudyHistoryStore,
     WrongAnswerStore,
+    advance_kana_game_state,
     build_confusing_question_items,
     build_example_question_items,
     build_kana_question_items,
@@ -112,6 +115,42 @@ def run_romaji_quiz(
     print(f"\n결과: {correct}/{count} 정답, 최고 연속 정답 {best_streak}.")
     if history_store is not None:
         history_store.record_session(title, mode, correct=correct, total=count)
+
+
+def run_romaji_game(
+    title: str,
+    entries: tuple[tuple[str, str], ...],
+    store: WrongAnswerStore,
+    *,
+    history_store: StudyHistoryStore | None = None,
+    count: int = KANA_QUESTION_COUNT,
+    mode: str = "romaji",
+) -> None:
+    question_count = min(count, len(entries))
+    questions = build_kana_question_items(entries, count=question_count)
+    state = KanaGameState(total=question_count)
+    print(f"\n{title}")
+    print(f"목표: {question_count}문제 전부 돌파")
+    print(f"목숨: {state.lives}/{KANA_GAME_LIVES}")
+
+    for index, (symbol, romaji) in enumerate(questions, start=1):
+        print(f"\n문제 {index}/{question_count} | 목숨 {state.lives}/{KANA_GAME_LIVES}")
+        is_correct = ask_question(symbol, romaji, store)
+        state = advance_kana_game_state(state, is_correct=is_correct)
+        if is_correct:
+            print(f"연속 정답: {state.streak}")
+        else:
+            print(f"남은 목숨: {state.lives}/{KANA_GAME_LIVES}")
+        if state.finished:
+            break
+
+    if state.won:
+        print("\n게임 승리. 모든 문제를 끝까지 돌파했습니다.")
+    elif state.lost:
+        print("\n게임 종료. 목숨이 모두 사라졌습니다.")
+    print(f"결과: {state.correct}/{question_count} 정답, 최고 연속 정답 {state.best_streak}.")
+    if history_store is not None:
+        history_store.record_session(title, mode, correct=state.correct, total=question_count)
 
 
 def run_choice_quiz(
@@ -342,7 +381,7 @@ def run_kana_level_menu(
             )
         else:
             title = f"{label} Lv.{level} {level_label}"
-            run_romaji_quiz(
+            run_romaji_game(
                 title,
                 get_kana(script, level=level),
                 store,

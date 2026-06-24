@@ -15,6 +15,7 @@ ExampleItem = tuple[str, str, str, str, str, str]
 ParticleMeaningChoice = tuple[str, str]
 ParticleItem = dict[str, object]
 KANA_LEVEL_UNLOCK_ACCURACY = 80.0
+KANA_GAME_LIVES = 3
 
 ROMAJI_ALIASES: dict[str, set[str]] = {
     "shi": {"shi", "si"},
@@ -29,6 +30,28 @@ ROMAJI_ALIASES: dict[str, set[str]] = {
 class Prompt:
     symbol: str
     romaji: str
+
+
+@dataclass(frozen=True)
+class KanaGameState:
+    total: int
+    lives: int = KANA_GAME_LIVES
+    correct: int = 0
+    answered: int = 0
+    streak: int = 0
+    best_streak: int = 0
+
+    @property
+    def won(self) -> bool:
+        return self.total > 0 and self.answered >= self.total and self.lives > 0
+
+    @property
+    def lost(self) -> bool:
+        return self.lives <= 0
+
+    @property
+    def finished(self) -> bool:
+        return self.won or self.lost
 
 
 @dataclass(frozen=True)
@@ -87,6 +110,28 @@ def is_correct_romaji(answer: str, expected: str) -> bool:
     normalized_expected = normalize_romaji(expected)
     accepted = ROMAJI_ALIASES.get(normalized_expected, {normalized_expected})
     return normalized_answer in accepted
+
+
+def advance_kana_game_state(state: KanaGameState, *, is_correct: bool) -> KanaGameState:
+    answered = state.answered + 1
+    if is_correct:
+        streak = state.streak + 1
+        return KanaGameState(
+            total=state.total,
+            lives=state.lives,
+            correct=state.correct + 1,
+            answered=answered,
+            streak=streak,
+            best_streak=max(state.best_streak, streak),
+        )
+    return KanaGameState(
+        total=state.total,
+        lives=max(0, state.lives - 1),
+        correct=state.correct,
+        answered=answered,
+        streak=0,
+        best_streak=state.best_streak,
+    )
 
 
 def build_multiple_choice(
